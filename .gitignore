@@ -1,0 +1,23 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# UI (only if a JS build step is added)
+ui/node_modules/
+ui/dist/
+
+# Slicer artefacts
+*.gcode
+*.3mf.tmp
+
+# Local config & secrets — never commit
+.env
+.env.*
+*.local.toml
+credentials.toml
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
