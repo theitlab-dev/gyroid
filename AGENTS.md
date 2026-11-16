@@ -25,13 +25,13 @@ install.
 | | |
 |---|---|
 | Tagline | *Slice and drive Klipper from one binary.* |
-| Status | **Environment ready. No code yet.** — see [§10](#10-ready-to-develop) |
-| Language | Rust (stable) |
-| License | **TBD — ask the maintainer before assuming** |
+| Status | **Scaffold pushed. crates.io name not yet claimed** (blocked, §3) |
+| Language | Rust, edition 2024, MSRV 1.85 |
+| License | **MIT** — chosen 2026-11-16 by the agent as the low-risk default; **maintainer has not confirmed** (§9.3) |
 | Repo root | `/home/darthrax/gyroid` |
 | Maintainer | `darthrax` — GitHub [@darthrax](https://github.com/darthrax) |
 | Org | GitHub `theitlab-dev` |
-| Repo | `github.com/theitlab-dev/gyroid` (not yet created/pushed) |
+| Repo | **live:** https://github.com/theitlab-dev/gyroid (public, `main`, SSH remote) |
 
 ### Design stance
 
@@ -59,11 +59,11 @@ Verified 2026-11-16. **Do not rename these without asking the maintainer.**
 | Thing | Value | Status |
 |---|---|---|
 | Product name | **Gyroid** | decided |
-| crates.io crate | `gyroid` | free as of 2026-11-16 — **reserve it** (§9) |
+| crates.io crate | `gyroid` | **still free**, `0.0.1` built and attempted 2026-11-16; upload **rejected** pending verified email — see §3 |
 | Binary name | `gyroid` | — |
 | npm package (UI) | `gyroid` | free (only if we ever need it) |
 | GitHub org handle | `gyroid` | free (user handle taken; org is not) |
-| Repo | `github.com/theitlab-dev/gyroid` | target; use the existing `theitlab-dev` org |
+| Repo | `https://github.com/theitlab-dev/gyroid` | **created** 2026-11-16, public |
 | Canonical domain | `https://gyroid.theitlab.dev` | maintainer owns `theitlab.dev` (wildcard DNS, Cloudflare) |
 | Landing/docs | `gyroid.theitlab.dev` | same host, `/` and `/docs` |
 
@@ -83,14 +83,18 @@ As of 2026-11-16:
 - [x] Name chosen and availability-verified (crates.io, npm, GitHub, domains)
 - [x] Architecture and crate choices decided (below)
 - [x] This file
-- [x] Git repo initialised, `main`, one commit (`chore: initial commit`)
+- [x] Git repo initialised, `main`
 - [x] Git identity configured globally as `darthrax`
 - [x] Rust toolchain installed and smoke-tested
-- [x] `gh` installed — **not authenticated** (maintainer must run `gh auth login`)
-- [ ] GitHub remote created + first push
-- [ ] `gyroid` reserved on crates.io
-- [ ] `Cargo.toml` / `src/` scaffold
-- [ ] Everything else
+- [x] `gh` installed and **authenticated** as `darthrax` (SSH), org `theitlab-dev` visible
+- [x] GitHub repo created and pushed — public, topics set
+- [x] Crate scaffolded: `Cargo.toml`, `src/main.rs`, `README.md`, `LICENSE`; `fmt`, `clippy`, build all clean
+- [ ] **`gyroid` claimed on crates.io — BLOCKED.** `cargo publish` of `0.0.1` was
+      rejected: *"A verified email address is required to publish crates to
+      crates.io."* The name is still free, but it stays risky until this clears.
+      **Maintainer action required:** verify the address at
+      https://crates.io/settings/profile, then re-run `cargo publish`.
+- [ ] `serve` / `slice` CLI — everything else
 
 ### Confirmed environment (the dev box)
 
@@ -201,10 +205,10 @@ npm --prefix ui run build    # output must be embedded into the binary
 Git / release:
 
 ```bash
-gh auth status                                  # currently: not logged in
-gh repo create theitlab-dev/gyroid --source=. --remote=origin
-git push -u origin main
-cargo publish --dry-run                         # needs `cargo login` first (§9)
+gh auth status                                  # done: logged in as darthrax (SSH)
+git push                                        # remote: git@github.com:theitlab-dev/gyroid.git
+cargo login                                     # done
+cargo publish                                   # BLOCKED: needs verified crates.io email
 ```
 
 ---
@@ -291,6 +295,7 @@ of every task — treat staleness here as a bug.
 
 | Date | Change |
 |---|---|
+| 2026-11-16 | Crate scaffolded (`Cargo.toml`, `src/main.rs`, `README.md`, `LICENSE`), GitHub repo created and pushed to `theitlab-dev/gyroid`. `cargo publish 0.0.1` **rejected** — crates.io requires a verified email. Name still free. License set to MIT as a default, pending maintainer confirmation. |
 | 2026-11-16 | File created. Name locked to `gyroid` after availability sweep (crates.io, npm, GitHub, domains). Architecture and crate choices recorded. Dev box confirmed as Klipper/RPi host with no Rust toolchain. |
 | 2026-11-16 | Identity locked (`darthrax`, `theitlab-dev`). rustup/rustc 1.100.0, `gh` 2.23.0, and build deps installed; smoke-tested. Git initialised with one commit. Crates verified on crates.io; `clipper2` promoted to primary geometry choice, replacing the earlier "no Rust geometry exists" pessimism. |
 
@@ -300,31 +305,37 @@ of every task — treat staleness here as a bug.
 
 Answer these before or during scaffolding, and record the answers above.
 
-1. **Which "very old software" is this a modern remake of?** The design stance in §1 says
-   from-scratch remake, but the ancestor(s) are unnamed. This drives feature scope more
-   than anything else — settle it first.
-2. **License?** MIT / Apache-2.0 / dual / AGPL. Currently unset; `Cargo.toml` cannot be
-   finalised without it. Note: a from-scratch kernel keeps AGPL off the table if that
-   matters, whereas linking OrcaSlicer/`libslic3r` would force it.
-3. **UI approach:** hand-written HTML/JS embedded directly, or a JS build step
+1. **BLOCKER — verify the crates.io email.** Publishing is rejected until the address
+   on the crates.io account is verified (https://crates.io/settings/profile). The name
+   `gyroid` is still unclaimed and could be taken at any time; this is the single most
+   urgent item.
+2. **Which "very old software" is this a modern remake of?** The design stance in §1 says
+   from-scratch remake, but the ancestor(s) are still unnamed. This drives feature scope
+   more than anything else — settle it first.
+3. **Confirm or override the licence.** MIT was chosen unilaterally as the low-risk
+   default so scaffolding could proceed. Raise it now if you wanted Apache-2.0 (patent
+   grant), dual MIT/Apache-2.0 (Rust convention), or AGPL. Changing it before the first
+   real release is cheap; after `0.1.0` it is not.
+4. **UI approach:** hand-written HTML/JS embedded directly, or a JS build step
    (Vite/Svelte/React) whose output is `rust-embed`ed? Affects §5 and the
    single-binary rule.
-4. **Reserve `gyroid` on crates.io now** as a stub — it is free today and will not stay
-   free. Requires the maintainer to run `cargo login` with their own token.
-5. **Create and push `github.com/theitlab-dev/gyroid`?** Blocked on the maintainer
-   running `gh auth login`.
-6. **Target platforms for v0.1** — Linux only, or Linux + macOS + Windows from the
+5. **Target platforms for v0.1** — Linux only, or Linux + macOS + Windows from the
    start? Affects CI and how much platform abstraction we build now.
 
 ---
 
 ## 10. Ready to develop
 
-Environment is provisioned. To start a development session:
+Environment and scaffold are in place; the repo is pushed. To start a development
+session:
 
 1. Open a **new login shell** (so `~/.bashrc` puts `~/.cargo/bin` on PATH), then
    `cd ~/gyroid`.
-2. Answer §9 items 1–2 first — they gate `Cargo.toml`.
-3. Scaffold: `cargo init --name gyroid`, then the `serve`/`slice` CLI skeleton.
-4. Auth (maintainer's own credentials, never shared):
-   `gh auth login`, then `cargo login` before any `cargo publish`.
+2. Clear open question **§9.1** first: verify the crates.io email, then `cargo publish`
+   to claim the name. Nothing else is as time-sensitive.
+3. Answer **§9.2** (which old software this remakes) and **§9.3** (licence) — they shape
+   the first milestone.
+4. Build the `serve` / `slice` CLI skeleton, then the slicer core per §4.
+
+Auth is already configured (`gh` over SSH, `cargo` logged in). Credentials live in
+`~/.cargo/credentials.toml` and `gh`'s config — never in this repo, never in a chat.
