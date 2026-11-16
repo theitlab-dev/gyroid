@@ -25,9 +25,9 @@ install.
 | | |
 |---|---|
 | Tagline | *Slice and drive Klipper from one binary.* |
-| Status | **Scaffold pushed. crates.io name not yet claimed** (blocked, §3) |
+| Status | **Name claimed, v0.0.1 published. No slicer yet** — see §3 |
 | Language | Rust, edition 2024, MSRV 1.85 |
-| License | **MIT** — chosen 2026-11-16 by the agent as the low-risk default; **maintainer has not confirmed** (§9.3) |
+| License | **MIT** — chosen 2026-11-16 by the agent as the low-risk default; **maintainer has not confirmed** (§9.2) |
 | Repo root | `/home/darthrax/gyroid` |
 | Maintainer | `darthrax` — GitHub [@darthrax](https://github.com/darthrax) |
 | Org | GitHub `theitlab-dev` |
@@ -59,7 +59,7 @@ Verified 2026-11-16. **Do not rename these without asking the maintainer.**
 | Thing | Value | Status |
 |---|---|---|
 | Product name | **Gyroid** | decided |
-| crates.io crate | `gyroid` | **still free**, `0.0.1` built and attempted 2026-11-16; upload **rejected** pending verified email — see §3 |
+| crates.io crate | `gyroid` | **CLAIMED** 2026-11-16, `v0.0.1` published; `cargo install gyroid` verified from the registry |
 | Binary name | `gyroid` | — |
 | npm package (UI) | `gyroid` | free (only if we ever need it) |
 | GitHub org handle | `gyroid` | free (user handle taken; org is not) |
@@ -89,11 +89,10 @@ As of 2026-11-16:
 - [x] `gh` installed and **authenticated** as `darthrax` (SSH), org `theitlab-dev` visible
 - [x] GitHub repo created and pushed — public, topics set
 - [x] Crate scaffolded: `Cargo.toml`, `src/main.rs`, `README.md`, `LICENSE`; `fmt`, `clippy`, build all clean
-- [ ] **`gyroid` claimed on crates.io — BLOCKED.** `cargo publish` of `0.0.1` was
-      rejected: *"A verified email address is required to publish crates to
-      crates.io."* The name is still free, but it stays risky until this clears.
-      **Maintainer action required:** verify the address at
-      https://crates.io/settings/profile, then re-run `cargo publish`.
+- [x] **`gyroid` claimed on crates.io** — `v0.0.1` published 2026-11-16 after the
+      maintainer verified the account email. Tagged `v0.0.1`, GitHub release created.
+      Verified end to end: `cargo install gyroid` from the registry runs.
+- [ ] Real slicing: mesh load, layer plan, infill, G-code emit
 - [ ] `serve` / `slice` CLI — everything else
 
 ### Confirmed environment (the dev box)
@@ -208,7 +207,9 @@ Git / release:
 gh auth status                                  # done: logged in as darthrax (SSH)
 git push                                        # remote: git@github.com:theitlab-dev/gyroid.git
 cargo login                                     # done
-cargo publish                                   # BLOCKED: needs verified crates.io email
+cargo publish                                   # done: v0.0.1 published 2026-11-16
+git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z
+gh release create vX.Y.Z --generate-notes
 ```
 
 ---
@@ -295,6 +296,7 @@ of every task — treat staleness here as a bug.
 
 | Date | Change |
 |---|---|
+| 2026-11-16 | **`gyroid` claimed on crates.io.** `v0.0.1` published after the maintainer verified the account email; tagged and released. `cargo install gyroid` verified from the registry. Publish blocker from the previous entry is resolved. |
 | 2026-11-16 | Crate scaffolded (`Cargo.toml`, `src/main.rs`, `README.md`, `LICENSE`), GitHub repo created and pushed to `theitlab-dev/gyroid`. `cargo publish 0.0.1` **rejected** — crates.io requires a verified email. Name still free. License set to MIT as a default, pending maintainer confirmation. |
 | 2026-11-16 | File created. Name locked to `gyroid` after availability sweep (crates.io, npm, GitHub, domains). Architecture and crate choices recorded. Dev box confirmed as Klipper/RPi host with no Rust toolchain. |
 | 2026-11-16 | Identity locked (`darthrax`, `theitlab-dev`). rustup/rustc 1.100.0, `gh` 2.23.0, and build deps installed; smoke-tested. Git initialised with one commit. Crates verified on crates.io; `clipper2` promoted to primary geometry choice, replacing the earlier "no Rust geometry exists" pessimism. |
@@ -305,21 +307,17 @@ of every task — treat staleness here as a bug.
 
 Answer these before or during scaffolding, and record the answers above.
 
-1. **BLOCKER — verify the crates.io email.** Publishing is rejected until the address
-   on the crates.io account is verified (https://crates.io/settings/profile). The name
-   `gyroid` is still unclaimed and could be taken at any time; this is the single most
-   urgent item.
-2. **Which "very old software" is this a modern remake of?** The design stance in §1 says
+1. **Which "very old software" is this a modern remake of?** The design stance in §1 says
    from-scratch remake, but the ancestor(s) are still unnamed. This drives feature scope
    more than anything else — settle it first.
-3. **Confirm or override the licence.** MIT was chosen unilaterally as the low-risk
+2. **Confirm or override the licence.** MIT was chosen unilaterally as the low-risk
    default so scaffolding could proceed. Raise it now if you wanted Apache-2.0 (patent
    grant), dual MIT/Apache-2.0 (Rust convention), or AGPL. Changing it before the first
    real release is cheap; after `0.1.0` it is not.
-4. **UI approach:** hand-written HTML/JS embedded directly, or a JS build step
+3. **UI approach:** hand-written HTML/JS embedded directly, or a JS build step
    (Vite/Svelte/React) whose output is `rust-embed`ed? Affects §5 and the
    single-binary rule.
-5. **Target platforms for v0.1** — Linux only, or Linux + macOS + Windows from the
+4. **Target platforms for v0.1** — Linux only, or Linux + macOS + Windows from the
    start? Affects CI and how much platform abstraction we build now.
 
 ---
@@ -331,11 +329,9 @@ session:
 
 1. Open a **new login shell** (so `~/.bashrc` puts `~/.cargo/bin` on PATH), then
    `cd ~/gyroid`.
-2. Clear open question **§9.1** first: verify the crates.io email, then `cargo publish`
-   to claim the name. Nothing else is as time-sensitive.
-3. Answer **§9.2** (which old software this remakes) and **§9.3** (licence) — they shape
+2. Answer **§9.1** (which old software this remakes) and **§9.2** (licence) — they shape
    the first milestone.
-4. Build the `serve` / `slice` CLI skeleton, then the slicer core per §4.
+3. Build the `serve` / `slice` CLI skeleton, then the slicer core per §4.
 
 Auth is already configured (`gh` over SSH, `cargo` logged in). Credentials live in
 `~/.cargo/credentials.toml` and `gh`'s config — never in this repo, never in a chat.
