@@ -108,10 +108,11 @@ This repo lives **on the printer host** — a Raspberry Pi 4.
 | Node / npm | v22.23.4 / 10.9.9 (only needed if the UI gets a build step) |
 | Smoke test | `cargo build` of a hello-world: **~4 s** debug |
 
-**Toolchain location:** `~/.cargo/bin`. rustup was installed with `--no-modify-path`,
-and a PATH block was appended to `~/.bashrc` — so `cargo` is available in **new login
-shells only**. In a non-login shell, `export PATH="$HOME/.cargo/bin:$PATH"` first, or
-use `~/.cargo/bin/cargo` explicitly.
+**Toolchain location:** `~/.cargo/bin`. rustup was installed with `--no-modify-path`, so
+PATH is set up manually in three places: a source block in `~/.bashrc` (interactive) and
+`~/.profile` (login), plus symlinks in `~/.local/bin`. Verified working in both
+interactive and non-interactive login shells. In a bare non-login shell, either
+`export PATH="$HOME/.cargo/bin:$PATH"` first or call `~/.cargo/bin/cargo` explicitly.
 
 **Performance reality:** 4 cores + SD card. `cargo check` and debug builds are fine.
 Full `--release` builds with heavy dependencies will be slow and disk-heavy; prefer CI
