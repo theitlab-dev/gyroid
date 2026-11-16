@@ -1,0 +1,20 @@
+[package]
+name = "gyroid"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+description = "Modern web-based slicer for 3D printers, with direct Moonraker integration. Single binary, no runtime."
+license = "MIT"
+authors = ["darthrax <1251533+darthrax@users.noreply.github.com>"]
+repository = "https://github.com/theitlab-dev/gyroid"
+homepage = "https://gyroid.theitlab.dev"
+documentation = "https://gyroid.theitlab.dev/docs"
+readme = "README.md"
+keywords = ["3d-printing", "slicer", "gcode", "klipper", "moonraker"]
+categories = ["command-line-utilities", "science"]
+
+[[bin]]
+name = "gyroid"
+path = "src/main.rs"
+
+[dependencies]
