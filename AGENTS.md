@@ -1,7 +1,7 @@
 # AGENTS.md — Gyroid
 
 > **Read this file first, before touching anything.** Then update it if your work
-> changed any fact recorded here (see [Maintaining this file](#maintaining-this-file)).
+> changed any fact recorded here (see [Maintaining this file](#8-maintaining-this-file)).
 
 Basic overview of the Gyroid project, its architecture, and the rules for working in it.
 
@@ -25,11 +25,23 @@ install.
 | | |
 |---|---|
 | Tagline | *Slice and drive Klipper from one binary.* |
-| Status | **Pre-scaffold.** Design decided, no code written yet. |
-| Language | Rust (edition 2024) |
+| Status | **Environment ready. No code yet.** — see [§10](#10-ready-to-develop) |
+| Language | Rust (stable) |
 | License | **TBD — ask the maintainer before assuming** |
 | Repo root | `/home/darthrax/gyroid` |
-| Maintainer | TBD — see [Open questions](#9-open-questions) |
+| Maintainer | `darthrax` — GitHub [@darthrax](https://github.com/darthrax) |
+| Org | GitHub `theitlab-dev` |
+| Repo | `github.com/theitlab-dev/gyroid` (not yet created/pushed) |
+
+### Design stance
+
+Written **from scratch**, as a **modern remake of very old software** in this space —
+not a port, not a fork, not a wrapper around an existing slicer. The intent is to take
+what those tools got right and rebuild it with a modern architecture: a single binary,
+a real web UI, and direct printer integration instead of filesystem-and-prayer.
+
+> **TBD:** the specific ancestor/ancestors being remade are not yet recorded. Ask the
+> maintainer and fill this in — it materially shapes feature scope. See §9.
 
 ### Non-goals (for now)
 
@@ -47,10 +59,11 @@ Verified 2026-11-16. **Do not rename these without asking the maintainer.**
 | Thing | Value | Status |
 |---|---|---|
 | Product name | **Gyroid** | decided |
-| crates.io crate | `gyroid` | free as of 2026-11-16 — **reserve it** |
+| crates.io crate | `gyroid` | free as of 2026-11-16 — **reserve it** (§9) |
 | Binary name | `gyroid` | — |
 | npm package (UI) | `gyroid` | free (only if we ever need it) |
 | GitHub org handle | `gyroid` | free (user handle taken; org is not) |
+| Repo | `github.com/theitlab-dev/gyroid` | target; use the existing `theitlab-dev` org |
 | Canonical domain | `https://gyroid.theitlab.dev` | maintainer owns `theitlab.dev` (wildcard DNS, Cloudflare) |
 | Landing/docs | `gyroid.theitlab.dev` | same host, `/` and `/docs` |
 
@@ -65,30 +78,45 @@ a weak trademark.
 
 ## 3. Current state
 
-Nothing is implemented yet. Written 2026-11-16:
+As of 2026-11-16:
 
 - [x] Name chosen and availability-verified (crates.io, npm, GitHub, domains)
 - [x] Architecture and crate choices decided (below)
 - [x] This file
+- [x] Git repo initialised, `main`, one commit (`chore: initial commit`)
+- [x] Git identity configured globally as `darthrax`
+- [x] Rust toolchain installed and smoke-tested
+- [x] `gh` installed — **not authenticated** (maintainer must run `gh auth login`)
+- [ ] GitHub remote created + first push
+- [ ] `gyroid` reserved on crates.io
+- [ ] `Cargo.toml` / `src/` scaffold
 - [ ] Everything else
 
 ### Confirmed environment (the dev box)
 
-This repo currently lives **on the printer host** — a Raspberry Pi 4.
+This repo lives **on the printer host** — a Raspberry Pi 4.
 
 | | |
 |---|---|
 | Arch / OS | `aarch64` / Debian 12 (bookworm) |
-| Hardware | 4 cores, 7.5 GB RAM, 46 GB free |
+| Hardware | 4 cores, 7.5 GB RAM, 46 GB free (SD card) |
 | Moonraker | **live** at `http://localhost:7125` — `GET /server/info` returns 200 |
 | Klipper / Mainsail | installed (`~/klipper`, `~/mainsail`, `~/printer_data`) |
-| Node / npm | v22.23.4 / 10.9.9 |
-| **Rust** | **NOT installed** — no `cargo`, no `rustup` |
+| rustc / cargo | **1.100.0 stable** (2026-11-09 / 2026-11-05), via rustup |
+| `gh` | 2.23.0 (Debian package) |
+| cc / pkg-config | gcc 12.2.0, pkg-config present; `libssl-dev` installed |
+| Node / npm | v22.23.4 / 10.9.9 (only needed if the UI gets a build step) |
+| Smoke test | `cargo build` of a hello-world: **~4 s** debug |
 
-Consequences: release builds here will be slow (4 cores, SD card). Prefer
-`cargo build`/`cargo check` during development, and build distribution binaries in CI or
-on a faster machine. If you need a faster linker, prefer `lld`; do not add `mold` on
-this box without asking.
+**Toolchain location:** `~/.cargo/bin`. rustup was installed with `--no-modify-path`,
+and a PATH block was appended to `~/.bashrc` — so `cargo` is available in **new login
+shells only**. In a non-login shell, `export PATH="$HOME/.cargo/bin:$PATH"` first, or
+use `~/.cargo/bin/cargo` explicitly.
+
+**Performance reality:** 4 cores + SD card. `cargo check` and debug builds are fine.
+Full `--release` builds with heavy dependencies will be slow and disk-heavy; prefer CI
+for distribution binaries. Use `lld` if linking becomes a bottleneck; do not add `mold`
+on this box without asking.
 
 ---
 
@@ -115,34 +143,42 @@ service) is a design error, not a trade-off.
 
 ### Planned crates
 
+Verified present and maintained on crates.io 2026-11-16 (downloads / last update).
+
 | Concern | Choice | Notes |
 |---|---|---|
-| HTTP server | `axum` + `tokio` | serve UI + API on one port |
-| Static UI | `rust-embed` | **must** embed; no external `dist/` at runtime |
-| Moonraker WS | `tokio-tungstenite` | `/websocket` for live status |
-| Moonraker REST | `reqwest` | upload, start, query |
-| Math | `nalgebra` | transforms, vectors |
-| 2D booleans / offsetting | `i_overlay`, `geo` | thin area in Rust — see below |
-| 3D collision | `parry3d` | support checks, later |
-| Mesh IO | `stl_io`, `obj-rs`, 3MF via `quick-xml`/`zip` | 3MF is a zip of XML |
-| Persistence | `rusqlite` (bundled) | jobs, history, settings |
+| HTTP server | `axum` + `tokio` | 595 M dl — serve UI + API on one port |
+| Static UI | `rust-embed` | **must** embed; no external `dist/` at runtime (68 M dl) |
+| Moonraker WS | `tokio-tungstenite` | `/websocket` for live status (363 M dl) |
+| Moonraker REST | `reqwest` | upload, start, query; **use `rustls`, not OpenSSL** (see below) |
+| 2D booleans / offsetting | **`clipper2`** | 455 k dl, updated 2026-11-12 — safe Rust API over Clipper2, the *same* clipper family real slicers use. **Primary geometry workhorse.** |
+| 2D alternative | `i_overlay` | 12 M dl, pure Rust, actively updated — fallback/benchmark against clipper2 |
+| Math | `nalgebra` | 102 M dl — transforms, vectors |
+| 3D collision | `parry3d` | 3.3 M dl — support checks, later |
+| Mesh IO | `stl_io` (5.5 M dl), `obj-rs`, 3MF via `quick-xml` + `zip` | 3MF is a zip of XML |
+| G-code validation | `gcode` | 30 k dl — parse/no-std, useful for testing our own output |
+| Persistence | `rusqlite` (`bundled`) | 156 M dl — jobs, history, settings |
 | Errors | `thiserror` (lib), `anyhow` (bin) | no `unwrap()` in library code |
 | Logging | `tracing` + `tracing-subscriber` | structured, stderr |
 | CLI | `clap` | `gyroid serve`, `gyroid slice`, etc. |
 
-**Known hard truth:** there is no mature Rust slicing or CAD kernel to build on.
-`cleave` (crates.io, "from-scratch geometry kernel for CAD") is abandoned at 28
-downloads. Expect to write polygon offsetting, infill generation, and layer planning
-ourselves. Scope the first milestone accordingly — it is not a weekend job.
+Use `rustls` rather than native OpenSSL in `reqwest` — native TLS is the single most
+common way a "single binary" turns into a binary plus system packages.
+
+**On the geometry risk** (revised 2026-11-16): there is still no mature Rust *slicer* to
+build on — `cleave` ("from-scratch geometry kernel for CAD") is abandoned at 28
+downloads, `imlet` (implicit modelling) last moved 2025-07, and
+`cortenforge-mesh-lattice` has 53 downloads. **But** `clipper2` gives us the hardest
+primitive — robust polygon offsetting and boolean ops — as a maintained, idiomatic Rust
+crate. The real work left is layer planning, infill generation, and the G-code emitter,
+not polygon algebra. Scope the first milestone to "slice a simple STL with 2–3 infill
+patterns and preview it", not "OrcaSlicer parity".
 
 ---
 
 ## 5. Commands
 
-Rust is not installed here. Do **not** install a toolchain or run `curl | sh` without
-asking the maintainer first — record the decision in [Open questions](#9-open-questions).
-
-Once scaffolded, these are the expected commands:
+PATH caveat in §3. Once scaffolding lands:
 
 ```bash
 cargo run -- serve --moonraker http://localhost:7125   # dev server, open :8080
@@ -154,11 +190,20 @@ cargo test                                             # unit tests
 cargo build --release                                  # slow on this box
 ```
 
-UI (only if a JS build step is introduced — currently undecided):
+UI (only if a JS build step is introduced — currently undecided, §9):
 
 ```bash
 npm --prefix ui install
 npm --prefix ui run build    # output must be embedded into the binary
+```
+
+Git / release:
+
+```bash
+gh auth status                                  # currently: not logged in
+gh repo create theitlab-dev/gyroid --source=. --remote=origin
+git push -u origin main
+cargo publish --dry-run                         # needs `cargo login` first (§9)
 ```
 
 ---
@@ -182,7 +227,7 @@ on it.
 
 1. **Never** auto-start a print, heartbeat, or job. A human confirms every one.
 2. Never send E-steps, PID, or endstop mutations without an explicit confirm dialog.
-3. Never write to `printer_data/config/` — that is Moonraker's/ Mainsail's territory.
+3. Never write to `printer_data/config/` — that is Moonraker's / Mainsail's territory.
 4. Any G-code we emit must be reviewable in the UI before upload.
 5. Destructive actions (restart, emergency stop) require a distinct, non-default control.
 6. Fail loudly and read-only when Moonraker is unreachable — never silently retry a print.
@@ -195,12 +240,13 @@ on it.
 - Library modules return typed errors (`thiserror`); `anyhow` only at the binary edge.
 - No `unwrap()`/`expect()` in library code. In tests it is fine.
 - Public items get doc comments. Modules get a one-line `//!` header.
-- Feature work lands as small commits; **conventional commits** (`feat:`, `fix:`,
-  `docs:`, `refactor:`, `chore:`).
-- Any new dependency needs a one-line justification in the PR/commit body — especially
+- Commit as **conventional commits** (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`),
+  authored as `darthrax <1251533+darthrax@users.noreply.github.com>`.
+- Any new dependency needs a one-line justification in the commit body — especially
   anything that pulls in C, or anything that breaks the single-binary goal.
-- Do not commit secrets. Tokens live in `~/.cargo/credentials.toml` (never in this repo)
-  and printer credentials in local config, not source.
+- Do not commit secrets. crates.io tokens live in `~/.cargo/credentials.toml` and GitHub
+  auth in `gh`'s keyring — **never** in this repo, and never paste a token into a chat
+  or a commit. Printer credentials stay in local config, not source.
 
 ---
 
@@ -215,13 +261,14 @@ of every task — treat staleness here as a bug.
 |---|---|
 | A crate is added, removed or replaced | §4 table |
 | A build/run/test command changes | §5 |
-| Rust toolchain / OS / hardware changes on the dev box | §3 |
+| Toolchain / OS / hardware changes on the dev box | §3 |
 | Moonraker endpoint or behaviour is discovered to differ | §6 |
 | A design decision is made or reversed | §2, §9, and the log |
 | The project moves from pre-scaffold to working | §1 status, §3 checklist |
-| License, maintainer or author identity is decided | §1, §9 |
+| License, maintainer or author identity is decided | §1, §2, §9 |
 | A convention is added or dropped | §7 |
 | Repo layout changes materially | §4 |
+| A milestone is completed | §3 checklist, §10 |
 
 ### Rules for editing this file
 
@@ -231,8 +278,8 @@ of every task — treat staleness here as a bug.
    the entry and say why it changed. Future agents repeat mistakes without it.
 3. **Mark uncertainty explicitly** — "TBD", "unverified", "as of <date>". Never state a
    guess as fact.
-4. **Verify, don't assume.** Commands, endpoints, and availability claims should be
-   checked against reality before being recorded.
+4. **Verify, don't assume.** Commands, endpoints, crate versions, and availability claims
+   should be checked against reality before being recorded.
 5. **Date every factual claim that can rot** (tool versions, availability checks,
    observed API behaviour).
 6. **Append to the update log** below with a one-line summary. Do not rewrite history.
@@ -244,6 +291,7 @@ of every task — treat staleness here as a bug.
 | Date | Change |
 |---|---|
 | 2026-11-16 | File created. Name locked to `gyroid` after availability sweep (crates.io, npm, GitHub, domains). Architecture and crate choices recorded. Dev box confirmed as Klipper/RPi host with no Rust toolchain. |
+| 2026-11-16 | Identity locked (`darthrax`, `theitlab-dev`). rustup/rustc 1.100.0, `gh` 2.23.0, and build deps installed; smoke-tested. Git initialised with one commit. Crates verified on crates.io; `clipper2` promoted to primary geometry choice, replacing the earlier "no Rust geometry exists" pessimism. |
 
 ---
 
@@ -251,15 +299,31 @@ of every task — treat staleness here as a bug.
 
 Answer these before or during scaffolding, and record the answers above.
 
-1. **License?** MIT / Apache-2.0 / dual / AGPL. Affects whether this can be packaged.
-2. **Maintainer identity** for `Cargo.toml` `authors`, git commits, and the crates.io
-   publisher — needs a name and email.
-3. **Install the Rust toolchain on this Pi, or develop elsewhere?** (aarch64, 4 cores —
-   workable but slow.) Nothing is installed yet.
-4. **UI approach:** hand-written HTML/JS embedded directly, or a JS build step
-   (Vite/React/Svelte) whose output is embedded? Affects §5 and the "single binary" rule.
-5. **Slicing license strategy:** writing the kernel from scratch vs. binding to
-   `libslic3r`/`OrcaSlicer` via C++ FFI (fast, but complicates single-binary builds and
-   is AGPL). This is the biggest technical decision outstanding.
-6. **Git:** initialise a repo now? (No git identity is configured on this machine yet.)
-7. **Reserve `gyroid` on crates.io now** as a stub, before someone takes it?
+1. **Which "very old software" is this a modern remake of?** The design stance in §1 says
+   from-scratch remake, but the ancestor(s) are unnamed. This drives feature scope more
+   than anything else — settle it first.
+2. **License?** MIT / Apache-2.0 / dual / AGPL. Currently unset; `Cargo.toml` cannot be
+   finalised without it. Note: a from-scratch kernel keeps AGPL off the table if that
+   matters, whereas linking OrcaSlicer/`libslic3r` would force it.
+3. **UI approach:** hand-written HTML/JS embedded directly, or a JS build step
+   (Vite/Svelte/React) whose output is `rust-embed`ed? Affects §5 and the
+   single-binary rule.
+4. **Reserve `gyroid` on crates.io now** as a stub — it is free today and will not stay
+   free. Requires the maintainer to run `cargo login` with their own token.
+5. **Create and push `github.com/theitlab-dev/gyroid`?** Blocked on the maintainer
+   running `gh auth login`.
+6. **Target platforms for v0.1** — Linux only, or Linux + macOS + Windows from the
+   start? Affects CI and how much platform abstraction we build now.
+
+---
+
+## 10. Ready to develop
+
+Environment is provisioned. To start a development session:
+
+1. Open a **new login shell** (so `~/.bashrc` puts `~/.cargo/bin` on PATH), then
+   `cd ~/gyroid`.
+2. Answer §9 items 1–2 first — they gate `Cargo.toml`.
+3. Scaffold: `cargo init --name gyroid`, then the `serve`/`slice` CLI skeleton.
+4. Auth (maintainer's own credentials, never shared):
+   `gh auth login`, then `cargo login` before any `cargo publish`.
